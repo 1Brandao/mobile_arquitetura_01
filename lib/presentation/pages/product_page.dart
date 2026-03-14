@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_arquitetura_02/presentation/viewmodels/product_viewmodel.dart';
+import 'package:provider/provider.dart';
 
 class ProductPage extends StatelessWidget {
-  final ProductViewmodel viewmodel;
-  const ProductPage({super.key, required this.viewmodel});
+  const ProductPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final viewmodel = context.watch<ProductViewmodel>();
+
     return Scaffold(
       appBar: AppBar(title: const Text("Products")),
       body: ListenableBuilder(
