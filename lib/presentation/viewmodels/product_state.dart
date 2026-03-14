@@ -19,7 +19,7 @@ class ProductState {
     return ProductState(
       isLoading: isLoading ?? this.isLoading,
       products: products ?? this.products,
-      error: error ?? this.error,
+      error: error,
     );
   }
 }

@@ -15,7 +15,7 @@ class ProductViewmodel {
 
     try {
       final products = await repository.getProducts();
-      state.value = state.value.copyWith(isLoading: true, products: products);
+      state.value = state.value.copyWith(isLoading: false, products: products);
     } catch (e) {
       state.value = state.value.copyWith(isLoading: false, error: e.toString());
     }

@@ -26,7 +26,6 @@ class ProductPage extends StatelessWidget {
               final product = state.products[index];
 
               return ListTile(
-                leading: Image.network(product.image),
                 title: Text(product.title),
                 subtitle: Text("\$${product.price}"),
               );
@@ -36,7 +35,7 @@ class ProductPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: viewmodel.loadProducts,
-        child: const Icon(Icons.download),
+        child: const Icon(Icons.refresh),
       ),
     );
   }
