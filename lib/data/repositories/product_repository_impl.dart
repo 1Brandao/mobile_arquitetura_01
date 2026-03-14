@@ -1,8 +1,8 @@
-import 'package:mobile_arquitetura_1/core/errors/failure.dart';
-import 'package:mobile_arquitetura_1/data/datasources/product_cache_datasource.dart';
-import 'package:mobile_arquitetura_1/data/datasources/product_remote_datasource.dart';
-import 'package:mobile_arquitetura_1/domain/entities/product.dart';
-import 'package:mobile_arquitetura_1/domain/repositories/product_repository.dart';
+import 'package:mobile_arquitetura_02/core/errors/failure.dart';
+import 'package:mobile_arquitetura_02/data/datasources/product_cache_datasource.dart';
+import 'package:mobile_arquitetura_02/data/datasources/product_remote_datasource.dart';
+import 'package:mobile_arquitetura_02/domain/entities/product.dart';
+import 'package:mobile_arquitetura_02/domain/repositories/product_repository.dart';
 
 class ProductRepositoryImpl implements ProductRepository {
   final ProductRemoteDatasource remote;
@@ -18,30 +18,19 @@ class ProductRepositoryImpl implements ProductRepository {
       cache.save(models);
 
       return models
-          .map(
-            (m) => Product(
-              id: m.id,
-              title: m.title,
-              price: m.price,
-              image: m.image,
-            ),
-          )
+          .map((m) => Product(id: m.id, title: m.title, price: m.price))
           .toList();
     } catch (e) {
       final cached = cache.get();
       if (cached != null) {
         return cached
-            .map(
-              (m) => Product(
-                id: m.id,
-                title: m.title,
-                price: m.price,
-                image: m.image,
-              ),
-            )
+            .map((m) => Product(id: m.id, title: m.title, price: m.price))
             .toList();
       }
       throw Failure("Nao foi possivel carregar os produtos!");
     }
   }
+
+  // @override
+  // void favoriteProduct(int id) {}
 }

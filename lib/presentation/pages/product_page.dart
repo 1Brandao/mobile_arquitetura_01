@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_arquitetura_1/presentation/viewmodels/product_state.dart';
-import 'package:mobile_arquitetura_1/presentation/viewmodels/product_viewmodel.dart';
+import 'package:mobile_arquitetura_02/presentation/viewmodels/product_viewmodel.dart';
 
 class ProductPage extends StatelessWidget {
   final ProductViewmodel viewmodel;
@@ -10,20 +9,20 @@ class ProductPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Products")),
-      body: ValueListenableBuilder<ProductState>(
-        valueListenable: viewmodel.state,
-        builder: (context, state, _) {
-          if (state.isLoading) {
+      body: ListenableBuilder(
+        listenable: viewmodel,
+        builder: (context, _) {
+          if (viewmodel.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state.error != null) {
-            return Center(child: Text(state.error!));
+          if (viewmodel.error != null) {
+            return Center(child: Text(viewmodel.error!));
           }
           return ListView.builder(
-            itemCount: state.products.length,
+            itemCount: viewmodel.products.length,
             itemBuilder: (context, index) {
-              final product = state.products[index];
+              final product = viewmodel.products[index];
 
               return ListTile(
                 title: Text(product.title),

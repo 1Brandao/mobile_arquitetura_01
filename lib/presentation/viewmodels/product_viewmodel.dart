@@ -1,23 +1,34 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:mobile_arquitetura_1/domain/repositories/product_repository.dart';
-import 'package:mobile_arquitetura_1/presentation/viewmodels/product_state.dart';
+import 'package:mobile_arquitetura_02/domain/entities/product.dart';
+import 'package:mobile_arquitetura_02/domain/repositories/product_repository.dart';
 
-class ProductViewmodel {
+class ProductViewmodel extends ChangeNotifier {
   final ProductRepository repository;
 
-  final ValueNotifier<ProductState> state = ValueNotifier(const ProductState());
+  bool _isLoading = false;
+  List<Product> _products = [];
+  String? _error;
+
+  bool get isLoading => _isLoading;
+  List<Product> get products => _products;
+  String? get error => _error;
 
   ProductViewmodel(this.repository);
 
   Future<void> loadProducts() async {
-    state.value = state.value.copyWith(isLoading: true);
-
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
     try {
       final products = await repository.getProducts();
-      state.value = state.value.copyWith(isLoading: false, products: products);
+      _products = products;
+      _isLoading = false;
+      notifyListeners();
     } catch (e) {
-      state.value = state.value.copyWith(isLoading: false, error: e.toString());
+      _isLoading = false;
+      _error = e.toString();
+      notifyListeners();
     }
   }
 }
