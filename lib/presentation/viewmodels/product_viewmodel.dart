@@ -1,23 +1,69 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
-import 'package:mobile_arquitetura_1/domain/repositories/product_repository.dart';
-import 'package:mobile_arquitetura_1/presentation/viewmodels/product_state.dart';
+import 'dart:collection';
 
-class ProductViewmodel {
+import 'package:flutter/cupertino.dart';
+import 'package:mobile_arquitetura_02/domain/entities/product.dart';
+import 'package:mobile_arquitetura_02/domain/repositories/product_repository.dart';
+
+class ProductViewmodel extends ChangeNotifier {
   final ProductRepository repository;
 
-  final ValueNotifier<ProductState> state = ValueNotifier(const ProductState());
+  bool _showOnlyFavorites = false;
+  bool _isLoading = false;
+  List<Product> _products = [];
+  String? _error;
+
+  bool get showOnlyFavorites => _showOnlyFavorites;
+  bool get isLoading => _isLoading;
+
+  UnmodifiableListView<Product> get products {
+    final source = _showOnlyFavorites
+        ? _products.where((p) => p.isFavorited).toList()
+        : _products;
+    return UnmodifiableListView(source);
+  }
+
+  String? get error => _error;
+  int get favoriteCount => _products.where((p) => p.isFavorited).length;
 
   ProductViewmodel(this.repository);
 
   Future<void> loadProducts() async {
-    state.value = state.value.copyWith(isLoading: true);
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _products = await repository.getProducts();
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void setShowOnlyFavorites(bool value) {
+    _showOnlyFavorites = value;
+    notifyListeners();
+  }
+
+  Future<void> toggleFavorite(int productId) async {
+    _error = null;
 
     try {
-      final products = await repository.getProducts();
-      state.value = state.value.copyWith(isLoading: false, products: products);
+      final updated = await repository.toggleFavorite(productId);
+      final index = _products.indexWhere((p) => p.id == updated.id);
+
+      if (index != -1) {
+        final copy = List<Product>.from(_products);
+        copy[index] = updated;
+        _products = copy;
+        notifyListeners();
+      }
     } catch (e) {
-      state.value = state.value.copyWith(isLoading: false, error: e.toString());
+      _error = e.toString();
+      notifyListeners();
     }
   }
 }
