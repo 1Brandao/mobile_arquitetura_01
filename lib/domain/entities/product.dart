@@ -10,4 +10,13 @@ class Product {
     required this.price,
     this.isFavorited = false,
   });
+
+  Product copyWith({int? id, String? title, double? price, bool? isFavorited}) {
+    return Product(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      price: price ?? this.price,
+      isFavorited: isFavorited ?? this.isFavorited,
+    );
+  }
 }

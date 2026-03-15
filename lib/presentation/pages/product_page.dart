@@ -10,7 +10,9 @@ class ProductPage extends StatelessWidget {
     final viewmodel = context.watch<ProductViewmodel>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Products")),
+      appBar: AppBar(
+        title: Text("Products (${viewmodel.favoriteCount} favoritos)"),
+      ),
       body: ListenableBuilder(
         listenable: viewmodel,
         builder: (context, _) {
@@ -21,16 +23,41 @@ class ProductPage extends StatelessWidget {
           if (viewmodel.error != null) {
             return Center(child: Text(viewmodel.error!));
           }
-          return ListView.builder(
-            itemCount: viewmodel.products.length,
-            itemBuilder: (context, index) {
-              final product = viewmodel.products[index];
+          return Column(
+            children: [
+              SwitchListTile(
+                title: const Text("Mostrar apenas favoritos"),
+                value: viewmodel.showOnlyFavorites,
+                onChanged: viewmodel.setShowOnlyFavorites,
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: viewmodel.products.length,
+                  itemBuilder: (context, index) {
+                    final product = viewmodel.products[index];
 
-              return ListTile(
-                title: Text(product.title),
-                subtitle: Text("\$${product.price}"),
-              );
-            },
+                    return Container(
+                      color: product.isFavorited
+                          ? Colors.yellow.withValues(alpha: 0.5)
+                          : Colors.transparent,
+                      child: ListTile(
+                        title: Text(product.title),
+                        subtitle: Text("\$${product.price}"),
+                        trailing: IconButton(
+                          icon: Icon(
+                            product.isFavorited
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: product.isFavorited ? Colors.green : null,
+                          ),
+                          onPressed: () => viewmodel.toogleFavorite(product.id),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),
