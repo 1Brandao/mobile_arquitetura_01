@@ -1,5 +1,6 @@
+import 'dart:collection';
+
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:mobile_arquitetura_02/domain/entities/product.dart';
 import 'package:mobile_arquitetura_02/domain/repositories/product_repository.dart';
 
@@ -13,9 +14,14 @@ class ProductViewmodel extends ChangeNotifier {
 
   bool get showOnlyFavorites => _showOnlyFavorites;
   bool get isLoading => _isLoading;
-  List<Product> get products => _showOnlyFavorites
-      ? _products.where((p) => p.isFavorited).toList()
-      : _products;
+
+  UnmodifiableListView<Product> get products {
+    final source = _showOnlyFavorites
+        ? _products.where((p) => p.isFavorited).toList()
+        : _products;
+    return UnmodifiableListView(source);
+  }
+
   String? get error => _error;
   int get favoriteCount => _products.where((p) => p.isFavorited).length;
 
@@ -26,13 +32,13 @@ class ProductViewmodel extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final products = await repository.getProducts();
-      _products = products;
-      _isLoading = false;
+      _products = await repository.getProducts();
       notifyListeners();
     } catch (e) {
-      _isLoading = false;
       _error = e.toString();
+      notifyListeners();
+    } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }
@@ -42,15 +48,17 @@ class ProductViewmodel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> toogleFavorite(int productId) async {
+  Future<void> toggleFavorite(int productId) async {
     _error = null;
 
     try {
-      final updated = await repository.toogleFavorite(productId);
+      final updated = await repository.toggleFavorite(productId);
       final index = _products.indexWhere((p) => p.id == updated.id);
 
       if (index != -1) {
-        _products[index] = updated;
+        final copy = List<Product>.from(_products);
+        copy[index] = updated;
+        _products = copy;
         notifyListeners();
       }
     } catch (e) {

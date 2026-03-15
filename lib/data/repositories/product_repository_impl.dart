@@ -44,7 +44,7 @@ class ProductRepositoryImpl implements ProductRepository {
   }
 
   @override
-  Future<Product> toogleFavorite(int productId) {
+  Future<Product> toggleFavorite(int productId) {
     final cached = cache.get();
 
     if (cached == null || cached.isEmpty) {

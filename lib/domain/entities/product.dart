@@ -2,7 +2,7 @@ class Product {
   final int id;
   final String title;
   final double price;
-  bool isFavorited;
+  final bool isFavorited;
 
   Product({
     required this.id,

@@ -50,7 +50,7 @@ class ProductPage extends StatelessWidget {
                                 : Icons.favorite_border,
                             color: product.isFavorited ? Colors.green : null,
                           ),
-                          onPressed: () => viewmodel.toogleFavorite(product.id),
+                          onPressed: () => viewmodel.toggleFavorite(product.id),
                         ),
                       ),
                     );
