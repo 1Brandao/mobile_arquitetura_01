@@ -1,9 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_arquitetura_02/core/app_routes.dart';
 import 'package:mobile_arquitetura_02/presentation/viewmodels/product_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class ProductPage extends StatelessWidget {
   const ProductPage({super.key});
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    ProductViewmodel viewmodel,
+    int productId,
+    String title,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir produto'),
+        content: Text('Deseja excluir "$title"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final success = await viewmodel.deleteProduct(productId);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'Produto excluído!' : viewmodel.error ?? 'Erro ao excluir'),
+            backgroundColor: success ? null : Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,14 +81,49 @@ class ProductPage extends StatelessWidget {
                       child: ListTile(
                         title: Text(product.title),
                         subtitle: Text("\$${product.price}"),
-                        trailing: IconButton(
-                          icon: Icon(
-                            product.isFavorited
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                            color: product.isFavorited ? Colors.green : null,
-                          ),
-                          onPressed: () => viewmodel.toggleFavorite(product.id),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                product.isFavorited
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                color: product.isFavorited ? Colors.green : null,
+                              ),
+                              onPressed: () =>
+                                  viewmodel.toggleFavorite(product.id),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () async {
+                                final updated = await Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.formPage,
+                                  arguments: product,
+                                );
+                                if (updated == true && context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Produto atualizado!')),
+                                  );
+                                }
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _confirmDelete(
+                                context,
+                                viewmodel,
+                                product.id,
+                                product.title,
+                              ),
+                            ),
+                          ],
+                        ),
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.detailsPage,
+                          arguments: product,
                         ),
                       ),
                     );
@@ -61,9 +134,23 @@ class ProductPage extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: viewmodel.loadProducts,
-        child: const Icon(Icons.refresh),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            heroTag: 'add',
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.formPage),
+            tooltip: 'Novo produto',
+            child: const Icon(Icons.add),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton(
+            heroTag: 'refresh',
+            onPressed: viewmodel.loadProducts,
+            tooltip: 'Atualizar',
+            child: const Icon(Icons.refresh),
+          ),
+        ],
       ),
     );
   }

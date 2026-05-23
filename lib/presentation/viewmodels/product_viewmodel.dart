@@ -66,4 +66,51 @@ class ProductViewmodel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<bool> addProduct(Product product) async {
+    _error = null;
+    try {
+      final created = await repository.addProduct(product);
+      _products = [..._products, created];
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateProduct(Product product) async {
+    _error = null;
+    try {
+      final updated = await repository.updateProduct(product);
+      final index = _products.indexWhere((p) => p.id == updated.id);
+      if (index != -1) {
+        final copy = List<Product>.from(_products);
+        copy[index] = updated;
+        _products = copy;
+        notifyListeners();
+      }
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteProduct(int id) async {
+    _error = null;
+    try {
+      await repository.deleteProduct(id);
+      _products = _products.where((p) => p.id != id).toList();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
 }

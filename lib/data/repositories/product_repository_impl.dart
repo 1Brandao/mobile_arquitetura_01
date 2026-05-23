@@ -1,6 +1,7 @@
 import 'package:mobile_arquitetura_02/core/errors/failure.dart';
 import 'package:mobile_arquitetura_02/data/datasources/product_cache_datasource.dart';
 import 'package:mobile_arquitetura_02/data/datasources/product_remote_datasource.dart';
+import 'package:mobile_arquitetura_02/data/models/product_model.dart';
 import 'package:mobile_arquitetura_02/domain/entities/product.dart';
 import 'package:mobile_arquitetura_02/domain/repositories/product_repository.dart';
 
@@ -15,7 +16,26 @@ class ProductRepositoryImpl implements ProductRepository {
       id: m.id,
       title: m.title,
       price: m.price,
+      description: m.description,
+      image: m.image,
+      category: m.category,
+      ratingRate: m.ratingRate,
+      ratingCount: m.ratingCount,
       isFavorited: m.isFavorited,
+    );
+  }
+
+  ProductModel _toModel(Product p) {
+    return ProductModel(
+      id: p.id,
+      title: p.title,
+      price: p.price,
+      description: p.description,
+      image: p.image,
+      category: p.category,
+      ratingRate: p.ratingRate,
+      ratingCount: p.ratingCount,
+      isFavorited: p.isFavorited,
     );
   }
 
@@ -66,5 +86,43 @@ class ProductRepositoryImpl implements ProductRepository {
     cache.save(updatedList);
 
     return Future.value(_toEntity(updated));
+  }
+
+  @override
+  Future<Product> addProduct(Product product) async {
+    final model = _toModel(product);
+    final created = await remote.addProduct(model);
+
+    final cached = List<ProductModel>.from(cache.get() ?? []);
+    cached.add(created);
+    cache.save(cached);
+
+    return _toEntity(created);
+  }
+
+  @override
+  Future<Product> updateProduct(Product product) async {
+    final model = _toModel(product);
+    final updated = await remote.updateProduct(model);
+
+    final cached = cache.get() ?? [];
+    final index = cached.indexWhere((p) => p.id == updated.id);
+
+    if (index != -1) {
+      final updatedList = List<ProductModel>.from(cached);
+      updatedList[index] = updated;
+      cache.save(updatedList);
+    }
+
+    return _toEntity(updated);
+  }
+
+  @override
+  Future<void> deleteProduct(int id) async {
+    await remote.deleteProduct(id);
+
+    final cached = cache.get() ?? [];
+    final updatedList = cached.where((p) => p.id != id).toList();
+    cache.save(updatedList);
   }
 }
