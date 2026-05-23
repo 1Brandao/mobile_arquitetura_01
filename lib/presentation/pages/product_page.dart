@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_arquitetura_02/core/app_routes.dart';
 import 'package:mobile_arquitetura_02/presentation/viewmodels/product_viewmodel.dart';
 import 'package:provider/provider.dart';
 
@@ -51,6 +52,11 @@ class ProductPage extends StatelessWidget {
                             color: product.isFavorited ? Colors.green : null,
                           ),
                           onPressed: () => viewmodel.toggleFavorite(product.id),
+                        ),
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.detailsPage,
+                          arguments: product,
                         ),
                       ),
                     );
