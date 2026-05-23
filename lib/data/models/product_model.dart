@@ -50,6 +50,18 @@ class ProductModel {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "title": title,
+      "price": price,
+      "description": description,
+      "image": image,
+      "category": category,
+      "rating": {"rate": ratingRate, "count": ratingCount},
+    };
+  }
+
   Map<String, dynamic> toCache() {
     return {
       "id": id,
