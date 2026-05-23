@@ -15,6 +15,11 @@ class ProductRepositoryImpl implements ProductRepository {
       id: m.id,
       title: m.title,
       price: m.price,
+      description: m.description,
+      image: m.image,
+      category: m.category,
+      ratingRate: m.ratingRate,
+      ratingCount: m.ratingCount,
       isFavorited: m.isFavorited,
     );
   }

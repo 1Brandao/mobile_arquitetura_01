@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:mobile_arquitetura_02/core/app_routes.dart';
 import 'package:mobile_arquitetura_02/data/datasources/product_cache_datasource.dart';
 import 'package:mobile_arquitetura_02/data/datasources/product_remote_datasource.dart';
 import 'package:mobile_arquitetura_02/data/repositories/product_repository_impl.dart';
+import 'package:mobile_arquitetura_02/presentation/pages/home_page.dart';
+import 'package:mobile_arquitetura_02/presentation/pages/product_detail_page.dart';
 import 'package:mobile_arquitetura_02/presentation/pages/product_page.dart';
 import 'package:mobile_arquitetura_02/presentation/viewmodels/product_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -23,10 +26,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => ProductViewmodel(repository),
-      child: const MaterialApp(
+      child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Products',
-        home: ProductPage(),
+        initialRoute: AppRoutes.homePage,
+        routes: {
+          AppRoutes.homePage: (context) => const HomePage(),
+          AppRoutes.productsPage: (context) => const ProductPage(),
+          AppRoutes.detailsPage: (context) => const ProductDetailPage(),
+        },
       ),
     );
   }
