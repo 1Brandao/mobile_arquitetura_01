@@ -52,16 +52,16 @@ package "domain" #E8F5E9 {
     + ratingCount : int
     + isFavorited : bool
     --
-    + Product(id, title, price, description,\n  image, category, ratingRate, ratingCount,\n  isFavorited)
+    + Product({required id : int,\n    required title : String,\n    required price : double,\n    required description : String,\n    required image : String,\n    required category : String,\n    required ratingRate : double,\n    required ratingCount : int,\n    isFavorited : bool = false})
     + copyWith(...) : Product
   }
 
-  interface ProductRepository <<abstract>> {
-    + getProducts()               : Future<List<Product>>
-    + toggleFavorite(productId)   : Future<Product>
-    + addProduct(product)         : Future<Product>
-    + updateProduct(product)      : Future<Product>
-    + deleteProduct(id)           : Future<void>
+  abstract class ProductRepository {
+    + getProducts()                          : Future<List<Product>>
+    + toggleFavorite(productId : int)        : Future<Product>
+    + addProduct(product : Product)          : Future<Product>
+    + updateProduct(product : Product)       : Future<Product>
+    + deleteProduct(id : int)               : Future<void>
   }
 }
 
@@ -81,7 +81,7 @@ package "data" #FFF8E1 {
     + ratingCount : int
     + isFavorited : bool
     --
-    + ProductModel(id, title, price, ...)
+    + ProductModel({required id : int,\n    required title : String,\n    required price : double,\n    required description : String,\n    required image : String,\n    required category : String,\n    required ratingRate : double,\n    required ratingCount : int,\n    isFavorited : bool = false})
     + {static} fromJson(json)  : ProductModel
     + {static} fromCache(json) : ProductModel
     + toJson()                 : Map<String,dynamic>
@@ -90,14 +90,14 @@ package "data" #FFF8E1 {
   }
 
   class ProductRemoteDatasource {
-    - client   : http.Client
-    - {static} _baseUrl : String
+    - client              : http.Client
+    - {static} {const} _baseUrl : String
     --
-    + ProductRemoteDatasource(client)
-    + getProducts()                      : Future<List<ProductModel>>
-    + addProduct(product)                : Future<ProductModel>
-    + updateProduct(product)             : Future<ProductModel>
-    + deleteProduct(id)                  : Future<void>
+    + ProductRemoteDatasource(client : http.Client)
+    + getProducts()                              : Future<List<ProductModel>>
+    + addProduct(product : ProductModel)         : Future<ProductModel>
+    + updateProduct(product : ProductModel)      : Future<ProductModel>
+    + deleteProduct(id : int)                    : Future<void>
   }
 
   class ProductCacheDatasource {
@@ -117,7 +117,7 @@ package "data" #FFF8E1 {
     + getProducts()        : Future<List<Product>>
     + toggleFavorite(id)   : Future<Product>
     + addProduct(product)  : Future<Product>
-    + updateProduct(product): Future<Product>
+    + updateProduct(product) : Future<Product>
     + deleteProduct(id)    : Future<void>
   }
 }
@@ -222,7 +222,7 @@ ProductRepositoryImpl --> ProductCacheDatasource  : usa
 ProductRepositoryImpl ..> Failure                 : throws
 ProductRemoteDatasource ..> ProductModel          : cria / retorna
 ProductCacheDatasource  *-- "0..*" ProductModel   : armazena
-ProductModel ..> Product                          : mapeia para
+ProductRepositoryImpl   ..> Product               : mapeia via _toEntity/_toModel
 
 ' Presentation — Provider
 ProductViewmodel --> ProductRepository  : depende de
