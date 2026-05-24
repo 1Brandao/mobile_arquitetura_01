@@ -7,6 +7,8 @@ import 'package:mobile_arquitetura_02/data/datasources/product_cache_datasource.
 import 'package:mobile_arquitetura_02/data/datasources/product_remote_datasource.dart';
 import 'package:mobile_arquitetura_02/data/repositories/auth_repository_impl.dart';
 import 'package:mobile_arquitetura_02/data/repositories/product_repository_impl.dart';
+import 'package:mobile_arquitetura_02/domain/repositories/auth_repository.dart';
+import 'package:mobile_arquitetura_02/domain/repositories/product_repository.dart';
 import 'package:mobile_arquitetura_02/presentation/pages/home_page.dart';
 import 'package:mobile_arquitetura_02/presentation/pages/login_page.dart';
 import 'package:mobile_arquitetura_02/presentation/pages/product_detail_page.dart';
@@ -17,58 +19,112 @@ import 'package:mobile_arquitetura_02/presentation/viewmodels/product_viewmodel.
 import 'package:provider/provider.dart';
 
 void main() {
-  final httpClient = http.Client();
-
-  final productDatasource = ProductRemoteDatasource(httpClient);
-  final productCache = ProductCacheDatasource();
-  final productRepository = ProductRepositoryImpl(productDatasource, productCache);
-
-  final authDatasource = AuthRemoteDatasource(httpClient);
-  final authRepository = AuthRepositoryImpl(authDatasource);
-  final userSession = UserSession();
-
-  runApp(MyApp(
-    productRepository: productRepository,
-    authRepository: authRepository,
-    userSession: userSession,
-  ));
+  runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
-  final ProductRepositoryImpl productRepository;
-  final AuthRepositoryImpl authRepository;
-  final UserSession userSession;
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
 
-  const MyApp({
-    super.key,
-    required this.productRepository,
-    required this.authRepository,
-    required this.userSession,
-  });
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final http.Client _httpClient;
+  late final UserSession _userSession;
+  late final ProductRepository _productRepository;
+  late final AuthRepository _authRepository;
+
+  // Rotas que exigem autenticação prévia
+  static const _protectedRoutes = {
+    AppRoutes.homePage,
+    AppRoutes.productsPage,
+    AppRoutes.detailsPage,
+    AppRoutes.formPage,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _httpClient = http.Client();
+    _userSession = UserSession();
+
+    final productDatasource = ProductRemoteDatasource(_httpClient);
+    final productCache = ProductCacheDatasource();
+    _productRepository = ProductRepositoryImpl(productDatasource, productCache);
+
+    final authDatasource = AuthRemoteDatasource(_httpClient);
+    _authRepository = AuthRepositoryImpl(authDatasource);
+  }
+
+  @override
+  void dispose() {
+    _httpClient.close();
+    super.dispose();
+  }
+
+  Route<dynamic> _generateRoute(RouteSettings settings) {
+    final name = settings.name;
+
+    // Guard: rotas protegidas redirecionam para login se não autenticado
+    if (_protectedRoutes.contains(name) && !_userSession.isLoggedIn) {
+      return MaterialPageRoute(
+        builder: (_) => const LoginPage(),
+        settings: const RouteSettings(name: AppRoutes.loginPage),
+      );
+    }
+
+    switch (name) {
+      case AppRoutes.loginPage:
+        return MaterialPageRoute(
+          builder: (_) => const LoginPage(),
+          settings: settings,
+        );
+      case AppRoutes.homePage:
+        return MaterialPageRoute(
+          builder: (_) => const HomePage(),
+          settings: settings,
+        );
+      case AppRoutes.productsPage:
+        return MaterialPageRoute(
+          builder: (_) => const ProductPage(),
+          settings: settings,
+        );
+      case AppRoutes.detailsPage:
+        return MaterialPageRoute(
+          builder: (_) => const ProductDetailPage(),
+          settings: settings,
+        );
+      case AppRoutes.formPage:
+        return MaterialPageRoute(
+          builder: (_) => const ProductFormPage(),
+          settings: settings,
+        );
+      default:
+        return MaterialPageRoute(
+          builder: (_) => const LoginPage(),
+          settings: settings,
+        );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider.value(value: userSession),
+        ChangeNotifierProvider.value(value: _userSession),
         ChangeNotifierProvider(
-          create: (_) => AuthViewmodel(authRepository, userSession),
+          create: (_) => AuthViewmodel(_authRepository, _userSession),
         ),
         ChangeNotifierProvider(
-          create: (_) => ProductViewmodel(productRepository),
+          create: (_) => ProductViewmodel(_productRepository),
         ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Products',
         initialRoute: AppRoutes.loginPage,
-        routes: {
-          AppRoutes.loginPage: (context) => const LoginPage(),
-          AppRoutes.homePage: (context) => const HomePage(),
-          AppRoutes.productsPage: (context) => const ProductPage(),
-          AppRoutes.detailsPage: (context) => const ProductDetailPage(),
-          AppRoutes.formPage: (context) => const ProductFormPage(),
-        },
+        onGenerateRoute: _generateRoute,
       ),
     );
   }
