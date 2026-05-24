@@ -1,0 +1,243 @@
+@startuml uml_classes
+!theme plain
+left to right direction
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 11
+skinparam packageFontSize 12
+skinparam packageBorderColor #555555
+skinparam packageBorderThickness 1.5
+skinparam classBorderColor #333333
+skinparam classBackgroundColor #FFFFFF
+skinparam arrowColor #444444
+skinparam shadowing false
+skinparam padding 5
+skinparam nodesep 25
+skinparam ranksep 45
+
+title Diagrama de Classes — mobile_arquitetura_02\n<size:10>(Clean Architecture · Flutter · Provider / ChangeNotifier)</size>
+
+' ─────────────────────────────────────────────
+'  CORE
+' ─────────────────────────────────────────────
+package "core" #EEF2FF {
+
+  class AppRoutes {
+    + {static} homePage     : String = '/'
+    + {static} productsPage : String = '/products'
+    + {static} detailsPage  : String = '/details'
+    + {static} formPage     : String = '/form'
+  }
+
+  class Failure implements Exception {
+    + message : String
+    --
+    + Failure(message : String)
+  }
+}
+
+' ─────────────────────────────────────────────
+'  DOMAIN
+' ─────────────────────────────────────────────
+package "domain" #E8F5E9 {
+
+  class Product {
+    + id          : int
+    + title       : String
+    + price       : double
+    + description : String
+    + image       : String
+    + category    : String
+    + ratingRate  : double
+    + ratingCount : int
+    + isFavorited : bool
+    --
+    + Product({required id : int,\n    required title : String,\n    required price : double,\n    required description : String,\n    required image : String,\n    required category : String,\n    required ratingRate : double,\n    required ratingCount : int,\n    isFavorited : bool = false})
+    + copyWith(...) : Product
+  }
+
+  abstract class ProductRepository {
+    + getProducts()                          : Future<List<Product>>
+    + toggleFavorite(productId : int)        : Future<Product>
+    + addProduct(product : Product)          : Future<Product>
+    + updateProduct(product : Product)       : Future<Product>
+    + deleteProduct(id : int)               : Future<void>
+  }
+}
+
+' ─────────────────────────────────────────────
+'  DATA
+' ─────────────────────────────────────────────
+package "data" #FFF8E1 {
+
+  class ProductModel {
+    + id          : int
+    + title       : String
+    + price       : double
+    + description : String
+    + image       : String
+    + category    : String
+    + ratingRate  : double
+    + ratingCount : int
+    + isFavorited : bool
+    --
+    + ProductModel({required id : int,\n    required title : String,\n    required price : double,\n    required description : String,\n    required image : String,\n    required category : String,\n    required ratingRate : double,\n    required ratingCount : int,\n    isFavorited : bool = false})
+    + {static} fromJson(json)  : ProductModel
+    + {static} fromCache(json) : ProductModel
+    + toJson()                 : Map<String,dynamic>
+    + toCache()                : Map<String,dynamic>
+    + copyWith(...)            : ProductModel
+  }
+
+  class ProductRemoteDatasource {
+    - client              : http.Client
+    - {static} {const} _baseUrl : String
+    --
+    + ProductRemoteDatasource(client : http.Client)
+    + getProducts()                              : Future<List<ProductModel>>
+    + addProduct(product : ProductModel)         : Future<ProductModel>
+    + updateProduct(product : ProductModel)      : Future<ProductModel>
+    + deleteProduct(id : int)                    : Future<void>
+  }
+
+  class ProductCacheDatasource {
+    - _cache : List<ProductModel>?
+    --
+    + save(products : List<ProductModel>) : void
+    + get()                               : List<ProductModel>?
+  }
+
+  class ProductRepositoryImpl implements ProductRepository {
+    + remote : ProductRemoteDatasource
+    + cache  : ProductCacheDatasource
+    --
+    + ProductRepositoryImpl(remote, cache)
+    - _toEntity(m)         : Product
+    - _toModel(p)          : ProductModel
+    + getProducts()        : Future<List<Product>>
+    + toggleFavorite(id)   : Future<Product>
+    + addProduct(product)  : Future<Product>
+    + updateProduct(product) : Future<Product>
+    + deleteProduct(id)    : Future<void>
+  }
+}
+
+' ─────────────────────────────────────────────
+'  PRESENTATION
+' ─────────────────────────────────────────────
+package "presentation" #FCE4EC {
+
+  class ProductViewmodel extends ChangeNotifier {
+    + repository         : ProductRepository
+    - _showOnlyFavorites : bool
+    - _isLoading         : bool
+    - _products          : List<Product>
+    - _error             : String?
+    --
+    + showOnlyFavorites  : bool  <<get>>
+    + isLoading          : bool  <<get>>
+    + products           : UnmodifiableListView<Product> <<get>>
+    + error              : String? <<get>>
+    + favoriteCount      : int  <<get>>
+    --
+    + ProductViewmodel(repository)
+    + loadProducts()            : Future<void>
+    + setShowOnlyFavorites(v)   : void
+    + toggleFavorite(productId) : Future<void>
+    + addProduct(product)       : Future<bool>
+    + updateProduct(product)    : Future<bool>
+    + deleteProduct(id)         : Future<bool>
+  }
+
+  class MyApp <<StatelessWidget>> {
+    + repository : ProductRepositoryImpl
+    --
+    + MyApp(repository)
+    + build(context) : Widget
+  }
+
+  class HomePage <<StatelessWidget>> {
+    --
+    + build(context) : Widget
+  }
+
+  class ProductPage <<StatelessWidget>> {
+    --
+    + build(context) : Widget
+    - _confirmDelete(context, viewmodel, productId, title) : Future<void>
+  }
+
+  class ProductDetailPage <<StatelessWidget>> {
+    --
+    + build(context) : Widget
+    - _confirmDelete(context, viewmodel, productId, title) : Future<void>
+  }
+
+  class _CategoryBadge <<StatelessWidget>> {
+    + category : String
+    --
+    + build(context) : Widget
+  }
+
+  class _RatingBadge <<StatelessWidget>> {
+    + rate  : double
+    + count : int
+    --
+    + build(context) : Widget
+  }
+
+  class ProductFormPage <<StatefulWidget>> {
+    --
+    + createState() : _ProductFormPageState
+  }
+
+  class _ProductFormPageState <<State>> {
+    - _formKey             : GlobalKey<FormState>
+    - _titleController     : TextEditingController
+    - _priceController     : TextEditingController
+    - _descriptionController : TextEditingController
+    - _categoryController  : TextEditingController
+    - _imageController     : TextEditingController
+    - _editingProduct      : Product?
+    - _isLoading           : bool
+    - _isEditing           : bool  <<get>>
+    --
+    + didChangeDependencies() : void
+    + dispose()               : void
+    - _submit()               : Future<void>
+    + build(context)          : Widget
+  }
+}
+
+' ─────────────────────────────────────────────
+'  RELACIONAMENTOS
+' ─────────────────────────────────────────────
+
+' Implementação
+ProductRepositoryImpl ..|> ProductRepository : implements
+
+' Data
+ProductRepositoryImpl --> ProductRemoteDatasource : usa
+ProductRepositoryImpl --> ProductCacheDatasource  : usa
+ProductRepositoryImpl ..> Failure                 : throws
+ProductRemoteDatasource ..> ProductModel          : cria / retorna
+ProductCacheDatasource  *-- "0..*" ProductModel   : armazena
+ProductRepositoryImpl   ..> Product               : mapeia via _toEntity/_toModel
+
+' Presentation — Provider
+ProductViewmodel --> ProductRepository  : depende de
+ProductViewmodel o-- "0..*" Product     : mantém lista
+
+MyApp --> ProductRepositoryImpl         : injeta via ChangeNotifierProvider
+MyApp ..> ProductViewmodel              : cria via Provider
+MyApp ..> AppRoutes                     : usa rotas
+
+HomePage          ..> AppRoutes         : navega com
+ProductPage       ..> AppRoutes         : navega com
+ProductDetailPage ..> AppRoutes         : navega com
+ProductFormPage   *-- _ProductFormPageState : compõe
+
+ProductDetailPage *-- _CategoryBadge   : compõe
+ProductDetailPage *-- _RatingBadge     : compõe
+
+@enduml
