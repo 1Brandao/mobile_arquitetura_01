@@ -22,16 +22,16 @@ class ProductModel {
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
-    final rating = json["rating"] as Map<String, dynamic>? ?? {};
+    final reviews = json["reviews"] as List<dynamic>? ?? [];
     return ProductModel(
       id: json["id"],
       title: json["title"],
       price: (json["price"] as num).toDouble(),
       description: json["description"] ?? '',
-      image: json["image"] ?? '',
+      image: json["thumbnail"] ?? '',
       category: json["category"] ?? '',
-      ratingRate: (rating["rate"] as num?)?.toDouble() ?? 0.0,
-      ratingCount: (rating["count"] as num?)?.toInt() ?? 0,
+      ratingRate: (json["rating"] as num?)?.toDouble() ?? 0.0,
+      ratingCount: reviews.length,
       isFavorited: false,
     );
   }
@@ -56,9 +56,9 @@ class ProductModel {
       "title": title,
       "price": price,
       "description": description,
-      "image": image,
+      "thumbnail": image,
       "category": category,
-      "rating": {"rate": ratingRate, "count": ratingCount},
+      "rating": ratingRate,
     };
   }
 

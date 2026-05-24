@@ -1,4 +1,5 @@
 class AppRoutes {
+  static const String loginPage = '/login';
   static const String homePage = '/';
   static const String productsPage = '/products';
   static const String detailsPage = '/details';

@@ -5,7 +5,7 @@ import 'package:mobile_arquitetura_02/data/models/product_model.dart';
 
 class ProductRemoteDatasource {
   final http.Client client;
-  static const _baseUrl = 'https://fakestoreapi.com/products';
+  static const _baseUrl = 'https://dummyjson.com/products';
 
   ProductRemoteDatasource(this.client);
 
@@ -17,15 +17,27 @@ class ProductRemoteDatasource {
     }
 
     final responseBody = utf8.decode(response.bodyBytes);
-    final data = jsonDecode(responseBody) as List;
+    final body = jsonDecode(responseBody) as Map<String, dynamic>;
+    final data = body['products'] as List;
     return data
         .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 
+  Future<ProductModel> getProductById(int id) async {
+    final response = await client.get(Uri.parse('$_baseUrl/$id'));
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch product: ${response.statusCode}');
+    }
+
+    final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    return ProductModel.fromJson(data);
+  }
+
   Future<ProductModel> addProduct(ProductModel product) async {
     final response = await client.post(
-      Uri.parse(_baseUrl),
+      Uri.parse('$_baseUrl/add'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(product.toJson()),
     );
