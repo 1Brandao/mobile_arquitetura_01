@@ -24,9 +24,9 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-
     final viewmodel = context.read<AuthViewmodel>();
+    if (viewmodel.isLoading) return;
+    if (!_formKey.currentState!.validate()) return;
     final success = await viewmodel.login(
       _usernameController.text.trim(),
       _passwordController.text,
