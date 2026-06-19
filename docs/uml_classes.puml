@@ -27,6 +27,7 @@ package "core" #EEF2FF {
     + {static} productsPage : String = '/products'
     + {static} detailsPage  : String = '/details'
     + {static} formPage     : String = '/form'
+    + {static} loginPage    : String = '/login'
   }
 
   class Failure implements Exception {
@@ -34,12 +35,34 @@ package "core" #EEF2FF {
     --
     + Failure(message : String)
   }
+
+  class UserSession extends ChangeNotifier {
+    - _user : User?
+    --
+    + user       : User?  <<get>>
+    + isLoggedIn : bool   <<get>>
+    --
+    + login(user : User) : void
+    + logout()           : void
+  }
 }
 
 ' ─────────────────────────────────────────────
 '  DOMAIN
 ' ─────────────────────────────────────────────
 package "domain" #E8F5E9 {
+
+  class User {
+    + id        : int
+    + username  : String
+    + firstName : String
+    + lastName  : String
+    + email     : String
+    + token     : String
+    --
+    + User({required id, required username,\n    required firstName, required lastName,\n    required email, required token})
+    + fullName  : String  <<get>>
+  }
 
   class Product {
     + id          : int
@@ -56,12 +79,16 @@ package "domain" #E8F5E9 {
     + copyWith(...) : Product
   }
 
+  abstract class AuthRepository {
+    + login(username : String, password : String) : Future<User>
+  }
+
   abstract class ProductRepository {
-    + getProducts()                          : Future<List<Product>>
-    + toggleFavorite(productId : int)        : Future<Product>
-    + addProduct(product : Product)          : Future<Product>
-    + updateProduct(product : Product)       : Future<Product>
-    + deleteProduct(id : int)               : Future<void>
+    + getProducts()                         : Future<List<Product>>
+    + toggleFavorite(productId : int)       : Future<Product>
+    + addProduct(product : Product)         : Future<Product>
+    + updateProduct(product : Product)      : Future<Product>
+    + deleteProduct(id : int)              : Future<void>
   }
 }
 
@@ -69,6 +96,34 @@ package "domain" #E8F5E9 {
 '  DATA
 ' ─────────────────────────────────────────────
 package "data" #FFF8E1 {
+
+  class UserModel {
+    + id        : int
+    + username  : String
+    + firstName : String
+    + lastName  : String
+    + email     : String
+    + token     : String
+    --
+    + UserModel({required id, required username,\n    required firstName, required lastName,\n    required email, required token})
+    + {static} fromJson(json : Map<String,dynamic>) : UserModel
+    + toEntity()                                    : User
+  }
+
+  class AuthRemoteDatasource {
+    - client                    : http.Client
+    - {static} {const} _baseUrl : String
+    --
+    + AuthRemoteDatasource(client : http.Client)
+    + login(username : String, password : String) : Future<UserModel>
+  }
+
+  class AuthRepositoryImpl implements AuthRepository {
+    + remote : AuthRemoteDatasource
+    --
+    + AuthRepositoryImpl(remote)
+    + login(username, password) : Future<User>
+  }
 
   class ProductModel {
     + id          : int
@@ -90,14 +145,14 @@ package "data" #FFF8E1 {
   }
 
   class ProductRemoteDatasource {
-    - client              : http.Client
+    - client                    : http.Client
     - {static} {const} _baseUrl : String
     --
     + ProductRemoteDatasource(client : http.Client)
-    + getProducts()                              : Future<List<ProductModel>>
-    + addProduct(product : ProductModel)         : Future<ProductModel>
-    + updateProduct(product : ProductModel)      : Future<ProductModel>
-    + deleteProduct(id : int)                    : Future<void>
+    + getProducts()                         : Future<List<ProductModel>>
+    + addProduct(product : ProductModel)    : Future<ProductModel>
+    + updateProduct(product : ProductModel) : Future<ProductModel>
+    + deleteProduct(id : int)               : Future<void>
   }
 
   class ProductCacheDatasource {
@@ -112,13 +167,13 @@ package "data" #FFF8E1 {
     + cache  : ProductCacheDatasource
     --
     + ProductRepositoryImpl(remote, cache)
-    - _toEntity(m)         : Product
-    - _toModel(p)          : ProductModel
-    + getProducts()        : Future<List<Product>>
-    + toggleFavorite(id)   : Future<Product>
-    + addProduct(product)  : Future<Product>
-    + updateProduct(product) : Future<Product>
-    + deleteProduct(id)    : Future<void>
+    - _toEntity(m)            : Product
+    - _toModel(p)             : ProductModel
+    + getProducts()           : Future<List<Product>>
+    + toggleFavorite(id)      : Future<Product>
+    + addProduct(product)     : Future<Product>
+    + updateProduct(product)  : Future<Product>
+    + deleteProduct(id)       : Future<void>
   }
 }
 
@@ -127,6 +182,20 @@ package "data" #FFF8E1 {
 ' ─────────────────────────────────────────────
 package "presentation" #FCE4EC {
 
+  class AuthViewmodel extends ChangeNotifier {
+    + repository : AuthRepository
+    + session    : UserSession
+    - _isLoading : bool
+    - _error     : String?
+    --
+    + isLoading  : bool    <<get>>
+    + error      : String? <<get>>
+    --
+    + AuthViewmodel(repository, session)
+    + login(username : String, password : String) : Future<bool>
+    + logout()                                    : void
+  }
+
   class ProductViewmodel extends ChangeNotifier {
     + repository         : ProductRepository
     - _showOnlyFavorites : bool
@@ -134,11 +203,11 @@ package "presentation" #FCE4EC {
     - _products          : List<Product>
     - _error             : String?
     --
-    + showOnlyFavorites  : bool  <<get>>
-    + isLoading          : bool  <<get>>
-    + products           : UnmodifiableListView<Product> <<get>>
-    + error              : String? <<get>>
-    + favoriteCount      : int  <<get>>
+    + showOnlyFavorites : bool  <<get>>
+    + isLoading         : bool  <<get>>
+    + products          : UnmodifiableListView<Product> <<get>>
+    + error             : String? <<get>>
+    + favoriteCount     : int  <<get>>
     --
     + ProductViewmodel(repository)
     + loadProducts()            : Future<void>
@@ -149,10 +218,28 @@ package "presentation" #FCE4EC {
     + deleteProduct(id)         : Future<bool>
   }
 
-  class MyApp <<StatelessWidget>> {
-    + repository : ProductRepositoryImpl
+  class MyApp <<StatefulWidget>> {
+    + repository     : ProductRepositoryImpl
+    + authRepository : AuthRepository
+    + userSession    : UserSession
     --
-    + MyApp(repository)
+    + MyApp(repository, authRepository, userSession)
+    + createState()  : State
+  }
+
+  class LoginPage <<StatefulWidget>> {
+    --
+    + createState() : _LoginPageState
+  }
+
+  class _LoginPageState <<State>> {
+    - _formKey            : GlobalKey<FormState>
+    - _usernameController : TextEditingController
+    - _passwordController : TextEditingController
+    - _obscurePassword    : bool
+    --
+    + dispose()      : void
+    - _submit()      : Future<void>
     + build(context) : Widget
   }
 
@@ -192,15 +279,15 @@ package "presentation" #FCE4EC {
   }
 
   class _ProductFormPageState <<State>> {
-    - _formKey             : GlobalKey<FormState>
-    - _titleController     : TextEditingController
-    - _priceController     : TextEditingController
+    - _formKey               : GlobalKey<FormState>
+    - _titleController       : TextEditingController
+    - _priceController       : TextEditingController
     - _descriptionController : TextEditingController
-    - _categoryController  : TextEditingController
-    - _imageController     : TextEditingController
-    - _editingProduct      : Product?
-    - _isLoading           : bool
-    - _isEditing           : bool  <<get>>
+    - _categoryController    : TextEditingController
+    - _imageController       : TextEditingController
+    - _editingProduct        : Product?
+    - _isLoading             : bool
+    - _isEditing             : bool  <<get>>
     --
     + didChangeDependencies() : void
     + dispose()               : void
@@ -213,10 +300,24 @@ package "presentation" #FCE4EC {
 '  RELACIONAMENTOS
 ' ─────────────────────────────────────────────
 
-' Implementação
-ProductRepositoryImpl ..|> ProductRepository : implements
+' Auth — Implementação
+AuthRepositoryImpl   ..|> AuthRepository       : implements
 
-' Data
+' Auth — Data
+AuthRepositoryImpl   --> AuthRemoteDatasource  : usa
+AuthRemoteDatasource ..> UserModel             : cria / retorna
+AuthRepositoryImpl   ..> User                 : mapeia via toEntity
+UserModel            ..> User                 : converte via toEntity()
+
+' Auth — Session & Presentation
+UserSession          o-- "0..1" User          : mantém
+AuthViewmodel        --> AuthRepository       : depende de
+AuthViewmodel        --> UserSession          : depende de
+
+' Product — Implementação
+ProductRepositoryImpl ..|> ProductRepository  : implements
+
+' Product — Data
 ProductRepositoryImpl --> ProductRemoteDatasource : usa
 ProductRepositoryImpl --> ProductCacheDatasource  : usa
 ProductRepositoryImpl ..> Failure                 : throws
@@ -225,19 +326,27 @@ ProductCacheDatasource  *-- "0..*" ProductModel   : armazena
 ProductRepositoryImpl   ..> Product               : mapeia via _toEntity/_toModel
 
 ' Presentation — Provider
-ProductViewmodel --> ProductRepository  : depende de
-ProductViewmodel o-- "0..*" Product     : mantém lista
+ProductViewmodel --> ProductRepository        : depende de
+ProductViewmodel o-- "0..*" Product           : mantém lista
 
-MyApp --> ProductRepositoryImpl         : injeta via ChangeNotifierProvider
-MyApp ..> ProductViewmodel              : cria via Provider
-MyApp ..> AppRoutes                     : usa rotas
+MyApp --> ProductRepositoryImpl               : injeta via ChangeNotifierProvider
+MyApp --> AuthRepositoryImpl                  : injeta
+MyApp --> UserSession                         : injeta
+MyApp ..> ProductViewmodel                    : cria via Provider
+MyApp ..> AuthViewmodel                       : cria via Provider
+MyApp ..> AppRoutes                           : usa rotas
 
-HomePage          ..> AppRoutes         : navega com
-ProductPage       ..> AppRoutes         : navega com
-ProductDetailPage ..> AppRoutes         : navega com
-ProductFormPage   *-- _ProductFormPageState : compõe
+LoginPage        *-- _LoginPageState          : compõe
+_LoginPageState  ..> AuthViewmodel            : usa via Provider
+_LoginPageState  ..> AppRoutes               : navega com
 
-ProductDetailPage *-- _CategoryBadge   : compõe
-ProductDetailPage *-- _RatingBadge     : compõe
+HomePage          ..> AppRoutes              : navega com
+HomePage          ..> UserSession            : lê nome do usuário
+ProductPage       ..> AppRoutes              : navega com
+ProductDetailPage ..> AppRoutes              : navega com
+ProductFormPage   *-- _ProductFormPageState  : compõe
+
+ProductDetailPage *-- _CategoryBadge         : compõe
+ProductDetailPage *-- _RatingBadge           : compõe
 
 @enduml
