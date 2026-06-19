@@ -94,6 +94,15 @@ Inicialização
 
 Qualquer tentativa de acessar uma rota protegida sem sessão ativa é interceptada pelo guard em `onGenerateRoute` e redirecionada para `LoginPage`.
 
+
+### Gerenciamento de estado — por que Provider?
+
+O projeto utiliza **Provider + ChangeNotifier** como solução de gerenciamento de estado. A escolha se justifica por:
+
+- **Estado compartilhado entre telas** — sessão do usuário (`UserSession`), lista de produtos e favoritos (`ProductViewmodel`) precisam ser observados por múltiplas telas. `setState` sozinho não atende, pois é restrito a um único widget.
+- **Atualização reativa da interface** — `notifyListeners()` reconstrói automaticamente apenas os widgets que observam o estado (`context.watch` / `ListenableBuilder`), mantendo a UI sincronizada ao favoritar, adicionar ou remover produtos.
+- **Baixa complexidade** — comparado a BLoC ou Riverpod, o Provider tem menor curva de aprendizado e boilerplate, sendo adequado ao escopo do projeto, ao mesmo tempo que mantém a separação entre ViewModels (lógica de apresentação) e Widgets (UI).
+
 ---
 
 ## API — DummyJSON

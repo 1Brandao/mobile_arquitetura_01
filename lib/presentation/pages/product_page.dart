@@ -35,7 +35,11 @@ class ProductPage extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? 'Produto excluído!' : viewmodel.error ?? 'Erro ao excluir'),
+            content: Text(
+              success
+                  ? 'Produto excluído!'
+                  : viewmodel.error ?? 'Erro ao excluir',
+            ),
             backgroundColor: success ? null : Colors.red,
           ),
         );
@@ -79,6 +83,29 @@ class ProductPage extends StatelessWidget {
                           ? Colors.yellow.withValues(alpha: 0.5)
                           : Colors.transparent,
                       child: ListTile(
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            product.image,
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stack) =>
+                                const Icon(Icons.broken_image, size: 40),
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return const SizedBox(
+                                width: 56,
+                                height: 56,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                         title: Text(product.title),
                         subtitle: Text("\$${product.price}"),
                         trailing: Row(
@@ -89,7 +116,9 @@ class ProductPage extends StatelessWidget {
                                 product.isFavorited
                                     ? Icons.favorite
                                     : Icons.favorite_border,
-                                color: product.isFavorited ? Colors.green : null,
+                                color: product.isFavorited
+                                    ? Colors.green
+                                    : null,
                               ),
                               onPressed: () =>
                                   viewmodel.toggleFavorite(product.id),
@@ -104,7 +133,9 @@ class ProductPage extends StatelessWidget {
                                 );
                                 if (updated == true && context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Produto atualizado!')),
+                                    const SnackBar(
+                                      content: Text('Produto atualizado!'),
+                                    ),
                                   );
                                 }
                               },
